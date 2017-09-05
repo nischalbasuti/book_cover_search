@@ -1,4 +1,8 @@
 # book_cover_search
+## Install dependencies
+```bash
+pip install -r requirements.txt
+```
 ## Starting local server:
 ```bash
 bash start_server.sh
