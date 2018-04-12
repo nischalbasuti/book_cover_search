@@ -3,6 +3,8 @@ import traceback
 import json
 import cloudinary.uploader
 import argparse
+from stopwords import stop_words
+from xlrd import open_workbook
 from xml.etree import ElementTree
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -25,25 +27,50 @@ imagePublicId = uploadResponse['public_id']
 #google search by image with imageUrl to get image description
 r = responseGoogle = requests.post(googleUrl, json={"image_url":imageUrl})
 try:
-    print(r.status_code, r.reason, r.headers['content-type'], r.json()['guess'][0])
+    #check if number
+    def is_number(s):
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
 
-    #get information about book from goodreads using the response from google image search
-    query = str(responseGoogle.json()['guess'][0]).replace('cover','').replace(' ','+')
-    #^ removing 'cover' here because it's fucking with alot of images
-    goodreadsUrl = "https://www.goodreads.com/search/index.xml?q="+query+"&key=be8kYuOF6mv9oVkl70OQrg&search_type=books"
-    responseGoodreads = requests.get(goodreadsUrl)
+    #search for words in dict list.
+    def searchXlsx(filename, wordsToSearch):
+        # Read xlsx file and save each row as a dict in dict_list.
+        book = open_workbook(filename);
+        sheet = book.sheet_by_index(0);
+        # read header values into the list    
+        keys = [sheet.cell(0, col_index).value for col_index in range(sheet.ncols)]
 
-    #parse xml response from goodreads to get information about book
-    tree = ElementTree.fromstring(responseGoodreads.content)
-    bookInfo = {}
-    for child in tree.find("search").find("results").find("work").find("best_book"):
-        if child.tag == 'author':
-            bookInfo[child.tag] = {}
-            for c in child:
-                bookInfo[child.tag][c.tag] = c.text
-        else:
-            bookInfo[child.tag] = child.text
-    print(json.dumps(bookInfo, sort_keys = True, indent = 4))
+        dict_list = []
+        for row_index in range(1, sheet.nrows):
+            d = {keys[col_index]: sheet.cell(row_index, col_index).value 
+                 for col_index in range(sheet.ncols)}
+            dict_list.append(d)
+
+        # get matches in results[]
+        results = [];
+        for word in wordsToSearch:
+            for row in dict_list:
+                rowString = str(row)
+                if word.lower() in rowString.lower():
+                    results.append( row );
+
+        print(len(results))
+        print(results)
+
+    # get list of meaningful words to search
+    wordsList = r.json()['guess'][0].split(' ')
+    wordsToSearch = []
+    for word in wordsList:
+        if (word.lower() not in stop_words) and (not is_number(word)):
+            wordsToSearch.append(word)
+    print(wordsToSearch)
+
+    searchXlsx("./AIT_Publication.xlsx", wordsToSearch)
+    searchXlsx("./generalbook.xls", wordsToSearch)
+
 except Exception as e:
     print("Couldn't find book :(")
     print("....error.....")
