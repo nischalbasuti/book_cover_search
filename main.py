@@ -19,6 +19,7 @@ googleUrl = "http://localhost:5000/search"
 #upload image to cloudinary and get url of and public_id of image
 uploadResponse = cloudinary.uploader.unsigned_upload(imagePath, "hqhbsw8g", cloud_name="nischalbasuti")
 imageUrl = uploadResponse['url']
+print(imageUrl)
 imagePublicId = uploadResponse['public_id']
 
 #google search by image with imageUrl to get image description
