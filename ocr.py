@@ -5,6 +5,7 @@ except ImportError as e:
 import pytesseract
 import os
 import argparse
+import re
 from stopwords import stop_words
 from xlrd import open_workbook
 
@@ -30,7 +31,9 @@ def is_number(s):
         return True
     except ValueError:
         return False
-
+def pretty(l, indent=0):
+    for d in l:
+        print(d)
 #search for words in dict list.
 def searchXlsx(filename, wordsToSearch):
     # Read xlsx file and save each row as a dict in dict_list.
@@ -47,40 +50,35 @@ def searchXlsx(filename, wordsToSearch):
 
     # get matches in results[]
     results = [];
+    count = 0
+    new_words_list = []
+    word = ""
+    for w in wordsToSearch:
+        word = word + " " + w
+        if count == 0:
+            new_words_list.append(word)
+            word = ""
+        count +=1
+    titles = []
     for word in wordsToSearch:
+        print(word)
         for row in dict_list:
-            rowString = str(row)
-            if word.lower() in rowString.lower():
-                results.append( row );
+            rowString = str(row["AUTHOR"])
+            
+            if re.search(r'\b%s\b'%(word.lower()), rowString.lower()):
+                results.append( str( row  )+ "\n" );
 
+    pretty(results)
     print(len(results))
-    print(results)
 
 # get list of meaningful words to search
-wordsList = getStringFromFilePath(imagePath).split(' ')
+wordsList = re.findall(r"[\w']+",getStringFromFilePath(imagePath))
 wordsToSearch = []
 for word in wordsList:
     if (word.lower() not in stop_words) and (not is_number(word)):
         wordsToSearch.append(word)
-print(wordsToSearch)
 
 searchXlsx("./AIT_Publication.xlsx", wordsToSearch)
 searchXlsx("./generalbook.xls", wordsToSearch)
 
-
-# if __name__ == "__main__":
-#     if imagePath is not None:
-#         print(".....\n File:")
-#         print(imagePath)
-#         print(".....\n OCR:")
-#         print(pytesseract.image_to_string(Image.open(imagePath)))
-#         print(".....")
-#     if dirPath is not None:
-#         for subdir, dirs, files in os.walk(dirPath):
-#             for file in files:
-#                 filedir = os.path.join(dirPath, file) 
-#                 print("..... File:")
-#                 print(filedir)
-#                 print("..... OCR:")
-#                 print(pytesseract.image_to_string(Image.open(filedir)))
-#                 print(".....\n\n")
+print(wordsToSearch)
