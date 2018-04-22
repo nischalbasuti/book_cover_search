@@ -8,6 +8,7 @@ import argparse
 import re
 from stopwords import stop_words
 from xlrd import open_workbook
+from collections import Counter
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-d", "--dir", help="path to directory with file(s)")
@@ -49,27 +50,28 @@ def searchXlsx(filename, wordsToSearch):
         dict_list.append(d)
 
     # get matches in results[]
-    results = [];
-    count = 0
-    new_words_list = []
-    word = ""
-    for w in wordsToSearch:
-        word = word + " " + w
-        if count == 0:
-            new_words_list.append(word)
-            word = ""
-        count +=1
+    results = []
     titles = []
     for word in wordsToSearch:
         print(word)
         for row in dict_list:
-            rowString = str(row["AUTHOR"])
-            
-            if re.search(r'\b%s\b'%(word.lower()), rowString.lower()):
-                results.append( str( row  )+ "\n" );
+            rowNameString = str(row["TITLE"])
+            if re.search(r'\b%s\b'%(word.lower()), rowNameString.lower()):
+                results.append(row);
 
-    pretty(results)
-    print(len(results))
+    finalResults = []
+    for word in wordsToSearch:
+        print(word)
+        for row in results:
+            rowTitleString = str(row["AUTHOR"])
+            # print(row['TITLE'])
+            if re.search(r'\b%s\b'%(word.lower()), rowTitleString.lower()):
+                finalResults.append( str( row  )+ "\n" );
+
+    countedDict = Counter( finalResults )
+    for result in countedDict:
+        print(result)
+        print(countedDict[result])
 
 # get list of meaningful words to search
 wordsList = re.findall(r"[\w']+",getStringFromFilePath(imagePath))
